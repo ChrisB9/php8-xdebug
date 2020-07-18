@@ -1,0 +1,205 @@
+FROM php:8.0.0alpha2-fpm-alpine
+
+ENV TERM="xterm" \
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8"
+ENV DOCKER_CONF_HOME=/opt/docker/
+ENV APPLICATION_USER=application \
+    APPLICATION_GROUP=application \
+    APPLICATION_PATH=/app \
+    APPLICATION_UID=1000 \
+    APPLICATION_GID=1000
+ENV NGINX_VERSION 1.18.0
+ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
+
+COPY conf/ /opt/docker/
+
+# install dependencies
+RUN apk add --no-cache \
+    		gcc \
+    		libc-dev \
+    		make \
+    		openssl-dev \
+    		pcre-dev \
+    		zlib-dev \
+    		linux-headers \
+    		curl \
+    		gnupg1 \
+    		libxslt-dev \
+    		gd-dev \
+    		geoip-dev \
+    		perl-dev \
+    	&& apk add --no-cache \
+    		autoconf \
+    		libtool \
+    		automake \
+    		git \
+    		g++ \
+    		cmake \
+    		sudo \
+    	&& apk add --no-cache --virtual .gettext gettext
+
+# Add groups and users
+RUN addgroup -S nginx \
+    && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
+RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
+    && echo '%application ALL=(ALL) ALL' > /etc/sudoers.d/application \
+    && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
+
+# install nginx @see https://github.com/fholzer/docker-nginx-brotli/blob/master/Dockerfile
+RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
+    && mkdir -p /usr/src \
+    && cd /usr/src \
+    && git clone --recursive https://github.com/google/ngx_brotli.git \
+    && cd ngx_brotli \
+    && git checkout -b $NGX_BROTLI_COMMIT $NGX_BROTLI_COMMIT \
+    && cd .. \
+    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
+    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
+        && sha512sum nginx.tar.gz nginx.tar.gz.asc \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && gpg --keyserver ipv4.pool.sks-keyservers.net --recv-keys "$GPG_KEYS" \
+    && gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
+    && rm -rf "$GNUPGHOME" nginx.tar.gz.asc \
+    && mkdir -p /usr/src \
+    && tar -zxC /usr/src -f nginx.tar.gz \
+    && rm nginx.tar.gz \
+    && cd /usr/src/nginx-$NGINX_VERSION \
+    && CONFIG=" \
+            --prefix=/etc/nginx \
+            --sbin-path=/usr/sbin/nginx \
+            --conf-path=/etc/nginx/nginx.conf \
+            --error-log-path=/var/log/nginx/error.log \
+            --http-log-path=/var/log/nginx/access.log \
+            --pid-path=/var/run/nginx.pid \
+            --lock-path=/var/run/nginx.lock \
+            --http-client-body-temp-path=/var/cache/nginx/client_temp \
+            --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+            --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+            --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+            --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+            --user=nginx \
+            --group=nginx \
+            --with-http_ssl_module \
+            --with-http_realip_module \
+            --with-http_addition_module \
+            --with-http_sub_module \
+            --with-http_dav_module \
+            --with-http_flv_module \
+            --with-http_mp4_module \
+            --with-http_gunzip_module \
+            --with-http_gzip_static_module \
+            --with-http_random_index_module \
+            --with-http_secure_link_module \
+            --with-http_stub_status_module \
+            --with-http_auth_request_module \
+            --with-http_xslt_module=dynamic \
+            --with-http_image_filter_module=dynamic \
+            --with-http_geoip_module=dynamic \
+            --with-http_perl_module=dynamic \
+            --with-mail \
+            --with-mail_ssl_module \
+            --with-file-aio \
+            --with-threads \
+            --with-stream \
+            --with-compat \
+            --with-stream_ssl_module \
+            --with-stream_realip_module \
+            --with-http_slice_module \
+            --with-http_v2_module \
+            --with-debug \
+            --add-dynamic-module=../ngx_brotli \
+    " \
+    && ./configure $CONFIG --with-debug \
+#    && make -j$(getconf _NPROCESSORS_ONLN) \
+    && make \
+    && make install \
+    && ln -s /usr/lib/nginx/modules /etc/nginx/modules \
+    && strip /usr/sbin/nginx* \
+    && mv /usr/bin/envsubst /tmp/ \
+    \
+    && runDeps="$( \
+        scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
+            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+            | sort -u \
+            | xargs -r apk info --installed \
+            | sort -u \
+    )" \
+    && apk add --no-cache --virtual .nginx-rundeps tzdata $runDeps \
+    && mv /tmp/envsubst /usr/local/bin/ \
+    \
+    # forward request and error logs to docker log collector
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+#    && rm /etc/nginx/nginx.conf \
+#    && ln -s /opt/docker/nginx/nginx.conf /etc/nginx/nginx.conf
+
+RUN mkdir -p /app/ \
+    && touch /app/index.html \
+    && echo "<h1>It Works!</h1>" >> /app/index.html
+
+RUN apk update && apk add --no-cache supervisor openssh nginx git wget vim nano less tree bash-completion mariadb-client
+
+STOPSIGNAL SIGQUIT
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+
+USER application
+
+RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /home/application/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /home/application/.git-prompt.sh
+RUN composer global require hirak/prestissimo davidrjonas/composer-lock-diff perftools/php-profiler && \
+    composer clear
+COPY user/* /home/application/
+RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
+
+USER root
+COPY user/* /root/
+RUN mkdir -p /opt/php-libs
+COPY php/* /opt/php-libs/files
+
+# install pcov
+RUN cd /opt/php-libs \
+    && git clone https://github.com/krakjoe/pcov.git \
+    && cd pcov \
+    && phpize \
+    && ./configure --enable-pcov \
+    && make \
+    && make install \
+    && docker-php-ext-enable pcov \
+    && echo "pcov.enabled=0" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini \
+    && echo "pcov.exclude='~vendor~'" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini \
+    && echo "pcov.directory=/app/" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini
+
+# install xdebug 3.0
+RUN cd /opt/php-libs \
+    && git clone https://github.com/xdebug/xdebug \
+    && cd xdebug \
+    # the last working commit, because the php-src is not up to date yet in this alpine
+    && git checkout 16be007556d5e04721e7fb4d351c491f6b9c3a54 \
+    && phpize \
+    && ./configure --enable-xdebug-dev \
+    && make all \
+    && echo "zend_extension=/opt/php-libs/xdebug/modules/xdebug.so" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+# install tideways
+RUN cd /opt/php-libs \
+     && git clone https://github.com/tideways/php-xhprof-extension \
+     && cd php-xhprof-extension \
+     && phpize \
+     && ./configure \
+     && make \
+     && make install
+# todo: perftools need to be configured yet
+#     && cd / \
+#     && echo "extension=tideways_xhprof.so" >> /usr/local/etc/php/conf.d/docker-php-ext-tideways.ini \
+#     && echo "auto_prepend_file=/opt/php-libs/files/profiler.php" >> /usr/local/etc/php/conf.d/docker-php-ext-tideways.ini
+
+RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
+RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
+
+WORKDIR /app
+
+EXPOSE 80 443 9000
+CMD ["/usr/bin/supervisord", "-c", "/opt/docker/supervisord.conf"]

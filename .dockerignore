@@ -1,0 +1,5 @@
+.git/
+.idea/
+php-dev-8.dockerfile
+docker-compose.yml
+app/

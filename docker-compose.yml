@@ -1,0 +1,16 @@
+version: '3.5'
+
+services:
+  php:
+    build:
+      dockerfile: php-dev-8.dockerfile
+      context: .
+    volumes:
+      - ./app:/app
+    environment:
+      - VIRTUAL_HOST=php8.local.cben.dev
+
+networks:
+  default:
+    external:
+      name: global
