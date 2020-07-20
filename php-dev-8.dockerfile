@@ -157,6 +157,9 @@ COPY user/* /root/
 RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files
 
+# activate opcache and jit
+RUN mv /opt/php-libs/files/opcache-jit.ini /usr/local/etc/php/conf.d/docker-php-opcache-jit.ini
+
 # install pcov
 RUN cd /opt/php-libs \
     && git clone https://github.com/krakjoe/pcov.git \
