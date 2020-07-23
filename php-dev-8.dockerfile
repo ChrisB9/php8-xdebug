@@ -1,4 +1,4 @@
-FROM php:8.0.0alpha2-fpm-alpine
+FROM php:8.0.0alpha3-fpm-alpine
 
 ENV TERM="xterm" \
     LANG="C.UTF-8" \
@@ -178,7 +178,6 @@ RUN cd /opt/php-libs \
     && git clone https://github.com/xdebug/xdebug \
     && cd xdebug \
     # the last working commit, because the php-src is not up to date yet in this alpine
-    && git checkout 16be007556d5e04721e7fb4d351c491f6b9c3a54 \
     && phpize \
     && ./configure --enable-xdebug-dev \
     && make all \
