@@ -2,7 +2,7 @@
 
 currently features:
 - nginx with brotli and http2 enabled
-- php 8.0 alpha2 (july; with opcache and jit enabled by default)
+- php 8.0 alpha3 (07/23; with opcache and jit enabled by default)
 - xdebug 3.0-dev
 - pcov
 - composer
