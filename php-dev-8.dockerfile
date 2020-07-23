@@ -141,7 +141,8 @@ RUN apk update && apk add --no-cache supervisor openssh git wget vim nano less t
 
 STOPSIGNAL SIGQUIT
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
+    &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=2.0.0-alpha2
 
 USER application
 
