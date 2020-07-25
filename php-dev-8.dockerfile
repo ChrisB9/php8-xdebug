@@ -43,7 +43,7 @@ RUN apk add --no-cache \
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-    && echo '%application ALL=(ALL) ALL' > /etc/sudoers.d/application \
+    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 
 RUN mkdir -p /usr/src \
@@ -131,7 +131,9 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
             | sort -u \
     )" \
     && apk add --no-cache --virtual .nginx-rundeps tzdata $runDeps \
-    && mv /tmp/envsubst /usr/local/bin/
+    && mv /tmp/envsubst /usr/local/bin/ \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN mkdir -p /app/ \
     && touch /app/index.html \
@@ -142,6 +144,10 @@ RUN apk update && apk add --no-cache supervisor openssh git wget vim nano less t
 STOPSIGNAL SIGQUIT
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+RUN cd /opt/docker/ && wget https://github.com/akinomyoga/ble.sh/releases/download/v0.3.2/ble-0.3.2.tar.xz \
+    && tar xJf ble-0.3.2.tar.xz \
+    && printf '%s\n%s\n' "[[ $- == *i* ]] && source /opt/docker/ble-0.3.2/ble.sh --noattach" "$(cat ~/.bashrc)" > ~/.bashrc \
+    && echo "((_ble_bash)) && ble-attach" >>  ~/.bashrc
 
 USER application
 
@@ -169,9 +175,7 @@ RUN cd /opt/php-libs \
     && make \
     && make install \
     && docker-php-ext-enable pcov \
-    && echo "pcov.enabled=0" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini \
-    && echo "pcov.exclude='~vendor~'" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini \
-    && echo "pcov.directory=/app/" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini
+    && mv /opt/php-libs/files/pcov.ini /usr/local/etc/php/conf.d/docker-php-pcov.ini
 
 # install xdebug 3.0
 RUN cd /opt/php-libs \
@@ -181,22 +185,30 @@ RUN cd /opt/php-libs \
     && phpize \
     && ./configure --enable-xdebug-dev \
     && make all \
-    && echo "zend_extension=/opt/php-libs/xdebug/modules/xdebug.so" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+    && mv /opt/php-libs/files/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 
 # install tideways
 RUN cd /opt/php-libs \
+#     mongodb-php-driver is not ready for php8 https://jira.mongodb.org/projects/PHPC/issues/PHPC-1631?filter=allopenissues
+#     && wget https://github.com/mongodb/mongo-php-driver/releases/download/1.8.0RC1/mongodb-1.8.0RC1.tgz \
+#     && tar zxvf mongodb-1.8.0RC1.tgz \
+#     && cd mongodb-1.8.0RC1 \
+#     && phpize \
+#     && ./configure \
+#     && make all \
+#     && make install \
      && git clone https://github.com/tideways/php-xhprof-extension \
      && cd php-xhprof-extension \
      && phpize \
      && ./configure \
      && make \
-     && make install
-# todo: perftools need to be configured yet
-#     && cd / \
-#     && echo "extension=tideways_xhprof.so" >> /usr/local/etc/php/conf.d/docker-php-ext-tideways.ini \
-#     && echo "auto_prepend_file=/opt/php-libs/files/profiler.php" >> /usr/local/etc/php/conf.d/docker-php-ext-tideways.ini
+     && make install \
+     && mkdir -p /opt/docker/profiler \
+     && mv /opt/php-libs/files/xhprof.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini
 
-RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
+RUN printf '%s\n%s\n' "[[ $- == *i* ]] && source /opt/docker/ble-0.3.2/ble.sh --noattach" "$(cat ~/.bashrc)" > ~/.bashrc \
+    && echo "((_ble_bash)) && ble-attach" >>  ~/.bashrc \
+    && echo "source ~/bashconfig.sh" >> ~/.bashrc
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
 
