@@ -143,11 +143,13 @@ RUN apk update && apk add --no-cache supervisor openssh git wget vim nano less t
 
 STOPSIGNAL SIGQUIT
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 RUN cd /opt/docker/ && wget https://github.com/akinomyoga/ble.sh/releases/download/v0.3.2/ble-0.3.2.tar.xz \
     && tar xJf ble-0.3.2.tar.xz \
     && printf '%s\n%s\n' "[[ $- == *i* ]] && source /opt/docker/ble-0.3.2/ble.sh --noattach" "$(cat ~/.bashrc)" > ~/.bashrc \
     && echo "((_ble_bash)) && ble-attach" >>  ~/.bashrc
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
+    &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=2.0.0-alpha2
 
 USER application
 
