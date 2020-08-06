@@ -1,13 +1,14 @@
 # PHP 8.0 with xdebug and pcov
 
-currently features:
+current features:
 - nginx with brotli and http2 enabled
-- php 8.0 alpha3 (07/23; with opcache and jit enabled by default)
+- php 8.0 beta 1 (06/08; with opcache and jit enabled by default)
 - xdebug 3.0-dev
 - pcov
-- composer
+- composer and composer2.0
 - bash (with auto-completion extension and colored)
-- tideways profiler (installed but not activated)
+- tideways profiler with perf-tools enabled
+- webp and image-optimizers
 
 #### testing this dockerfile:
 

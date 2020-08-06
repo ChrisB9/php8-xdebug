@@ -1,4 +1,4 @@
-FROM php:8.0.0alpha3-fpm-alpine
+FROM php:8.0.0beta1-fpm-alpine
 
 ENV TERM="xterm" \
     LANG="C.UTF-8" \
@@ -29,7 +29,6 @@ RUN apk add --no-cache \
     		gd-dev \
     		geoip-dev \
     		perl-dev \
-    	&& apk add --no-cache \
     		autoconf \
     		libtool \
     		automake \
@@ -133,20 +132,14 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
     && apk add --no-cache --virtual .nginx-rundeps tzdata $runDeps \
     && mv /tmp/envsubst /usr/local/bin/ \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
-
-RUN mkdir -p /app/ \
+    && ln -sf /dev/stderr /var/log/nginx/error.log \
+    && mkdir -p /app/ \
     && touch /app/index.html \
     && echo "<h1>It Works!</h1>" >> /app/index.html
 
-RUN apk update && apk add --no-cache supervisor openssh git wget vim nano less tree bash-completion mariadb-client
+RUN apk update && apk add --no-cache supervisor openssh libwebp-tools sshpass jpegoptim optipng pngquant git wget vim nano less tree bash-completion mariadb-client
 
 STOPSIGNAL SIGQUIT
-
-RUN cd /opt/docker/ && wget https://github.com/akinomyoga/ble.sh/releases/download/v0.3.2/ble-0.3.2.tar.xz \
-    && tar xJf ble-0.3.2.tar.xz \
-    && printf '%s\n%s\n' "[[ $- == *i* ]] && source /opt/docker/ble-0.3.2/ble.sh --noattach" "$(cat ~/.bashrc)" > ~/.bashrc \
-    && echo "((_ble_bash)) && ble-attach" >>  ~/.bashrc
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
     &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=2.0.0-alpha2
@@ -191,14 +184,6 @@ RUN cd /opt/php-libs \
 
 # install tideways
 RUN cd /opt/php-libs \
-#     mongodb-php-driver is not ready for php8 https://jira.mongodb.org/projects/PHPC/issues/PHPC-1631?filter=allopenissues
-#     && wget https://github.com/mongodb/mongo-php-driver/releases/download/1.8.0RC1/mongodb-1.8.0RC1.tgz \
-#     && tar zxvf mongodb-1.8.0RC1.tgz \
-#     && cd mongodb-1.8.0RC1 \
-#     && phpize \
-#     && ./configure \
-#     && make all \
-#     && make install \
      && git clone https://github.com/tideways/php-xhprof-extension \
      && cd php-xhprof-extension \
      && phpize \
@@ -208,9 +193,6 @@ RUN cd /opt/php-libs \
      && mkdir -p /opt/docker/profiler \
      && mv /opt/php-libs/files/xhprof.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini
 
-RUN printf '%s\n%s\n' "[[ $- == *i* ]] && source /opt/docker/ble-0.3.2/ble.sh --noattach" "$(cat ~/.bashrc)" > ~/.bashrc \
-    && echo "((_ble_bash)) && ble-attach" >>  ~/.bashrc \
-    && echo "source ~/bashconfig.sh" >> ~/.bashrc
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
 
