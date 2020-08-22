@@ -6,8 +6,15 @@ source ~/.git-prompt.sh
 # for more information on this: https://github.com/pluswerk/php-dev/blob/master/.additional_bashrc.sh
 CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
 export HOST_DISPLAY_NAME=$HOSTNAME
+if test -f "/var/run/docker.sock"; then
+   SUDO=''
+   if (( $EUID != 0 )); then
+      SUDO='sudo'
+   fi
+   $SUDO apk add docker
+fi
 if sudo docker ps -q &>/dev/null; then
-  DOCKER_COMPOSE_PROJECT=$(sudo docker inspect ${CONTAINER_ID} | grep '"com.docker.compose.project":' | awk '{print $2}' | tr --delete '"' | tr --delete ',')
+  DOCKER_COMPOSE_PROJECT=$(sudo docker inspect ${CONTAINER_ID} | grep '"com.docker.compose.project":' | awk '{print $2}' | tr -d '"' | tr -d ',')
   export NODE_CONTAINER=$(sudo docker ps -f "name=${DOCKER_COMPOSE_PROJECT}_node_1" --format {{.Names}})
   export HOST_DISPLAY_NAME=$(sudo docker inspect ${CONTAINER_ID} --format='{{.Name}}')
   export HOST_DISPLAY_NAME=${HOST_DISPLAY_NAME:1}
