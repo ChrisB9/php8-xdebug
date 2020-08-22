@@ -6,7 +6,7 @@ source ~/.git-prompt.sh
 # for more information on this: https://github.com/pluswerk/php-dev/blob/master/.additional_bashrc.sh
 CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
 export HOST_DISPLAY_NAME=$HOSTNAME
-if test -f "/var/run/docker.sock"; then
+if [ -e /var/run/docker.sock ]; then
    SUDO=''
    if (( $EUID != 0 )); then
       SUDO='sudo'
