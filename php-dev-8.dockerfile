@@ -137,7 +137,8 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
     && touch /app/index.html \
     && echo "<h1>It Works!</h1>" >> /app/index.html
 
-RUN apk update && apk add --no-cache supervisor openssh libwebp-tools sshpass jpegoptim optipng pngquant git wget vim nano less tree bash-completion mariadb-client
+RUN apk update && apk add --no-cache supervisor openssh libwebp-tools sshpass go aom-dev imagemagick jpegoptim optipng pngquant git wget vim nano less tree bash-completion mariadb-client
+RUN go get github.com/Kagami/go-avif
 
 STOPSIGNAL SIGQUIT
 
@@ -197,6 +198,6 @@ RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
 RUN mkdir -p /var/log/supervisord
 EXPOSE 80 443 9000
-CMD ["/usr/bin/supervisord", "-c", "/opt/docker/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-nc", "/opt/docker/supervisord.conf"]
 
 WORKDIR /app
