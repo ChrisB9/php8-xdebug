@@ -138,7 +138,10 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
     && echo "<h1>It Works!</h1>" >> /app/index.html
 
 RUN apk update && apk add --no-cache supervisor openssh libwebp-tools sshpass go aom-dev imagemagick jpegoptim optipng pngquant git wget vim nano less tree bash-completion mariadb-client
-RUN go get github.com/Kagami/go-avif
+RUN go get github.com/Kagami/go-avif \
+    && cd /root/go/src/github.com/Kagami/go-avif \
+    && make all \
+    && mv /root/go/bin/avif /usr/local/bin/avif
 
 STOPSIGNAL SIGQUIT
 
