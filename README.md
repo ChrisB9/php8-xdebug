@@ -2,8 +2,8 @@
 
 current features:
 - nginx with brotli and http2 enabled
-- php 8.0 beta 2 (20/08; with opcache and jit enabled by default)
-- xdebug 3.0-dev
+- php 8.0 rc1 (with xdebug, opcache and jit enabled by default)
+- xdebug 3.0-dev (set to profile,debug and develop-mode)
 - pcov
 - composer and composer2.0 (available as `composer2`)
 - bash (with auto-completion extension and colored)
