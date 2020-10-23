@@ -50,7 +50,7 @@ function getEnvVar() {
 }
 
 function restartPhp() {
-  $SUDO supervisorctl restart php-fpm:php-fpmd
+  $SUDO supervisorctl -c /opt/docker/supervisord.conf restart php-fpm:php-fpm
 }
 
 function xdebug-enable() {
