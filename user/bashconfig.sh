@@ -76,10 +76,10 @@ for ENV_VAR in $(listEnvs "php\."); do
   echo "$env_key = ${env_val}" >> /usr/local/etc/php/conf.d/x.override.php.ini
 done
 
-if [[ -z "${XDEBUG_HOST}"] ]; then
+if [[ -n "${XDEBUG_HOST}" ]]; then
   cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|\#\ xdebug\.client\_host\ \=|xdebug\.client\_host=${XDEBUG_HOST}|g" >> /tmp/xdebug.ini
   iniChanged=true
   $SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 fi
 
-iniChanged && restartPhp
+[ $iniChanged = true ] && restartPhp
