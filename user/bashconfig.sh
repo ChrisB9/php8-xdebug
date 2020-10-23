@@ -6,11 +6,13 @@ source ~/.git-prompt.sh
 # for more information on this: https://github.com/pluswerk/php-dev/blob/master/.additional_bashrc.sh
 CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
 export HOST_DISPLAY_NAME=$HOSTNAME
+
+SUDO=''
+if (( $EUID != 0 )); then
+   SUDO='sudo'
+fi
+
 if [ -e /var/run/docker.sock ]; then
-   SUDO=''
-   if (( $EUID != 0 )); then
-      SUDO='sudo'
-   fi
    $SUDO apk add docker
 fi
 if sudo docker ps -q &>/dev/null; then
@@ -38,3 +40,46 @@ PS1='\033]2;'$(pwd)'\007\[\e[0;36m\][\[\e[1;31m\]\u\[\e[0;36m\]@\[\e[1;34m\]$HOS
 if [ -z "$SSH_AUTH_SOCK" ] ; then
   ssh-add -t 604800 ~/.ssh/id_rsa
 fi
+
+function listEnvs() {
+  env | grep "^${1}" | cut -d= -f1
+}
+
+function getEnvVar() {
+  awk "BEGIN {print ENVIRON[\"$1\"]}"
+}
+
+function restartPhp() {
+  $SUDO supervisorctl restart php-fpm:php-fpmd
+}
+
+function xdebug-enable() {
+  xdebug-mode "profile,develop,debug"
+}
+
+function xdebug-disable() {
+  xdebug-mode "off"
+}
+
+function xdebug-mode() {
+  cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|$(cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | grep 'xdebug.mode')|xdebug\.mode\=${1}|g" >> /tmp/xdebug.ini
+  $SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+  restartPhp
+}
+
+iniChanged=false;
+for ENV_VAR in $(listEnvs "php\."); do
+  env_key=${ENV_VAR#php.}
+  env_val=$(getEnvVar "$ENV_VAR")
+  iniChanged=true
+
+  echo "$env_key = ${env_val}" >> /usr/local/etc/php/conf.d/x.override.php.ini
+done
+
+if [[ -z "${XDEBUG_HOST}"] ]; then
+  cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|\#\ xdebug\.client\_host\ \=|xdebug\.client\_host=${XDEBUG_HOST}|g" >> /tmp/xdebug.ini
+  iniChanged=true
+  $SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+fi
+
+iniChanged && restartPhp

@@ -2,20 +2,35 @@
 
 current features:
 - nginx with brotli and http2 enabled
-- php 8.0 rc1 (with xdebug, opcache and jit enabled by default)
-- xdebug 3.0-dev (set to profile,debug and develop-mode)
+- php 8.0 rc2 (with xdebug, opcache and jit enabled by default)
+- xdebug 3.0 beta1 (set to profile,debug and develop-mode)
 - pcov
 - composer and composer2.0 (available as `composer2`)
 - bash (with auto-completion extension and colored)
 - tideways profiler with perf-tools enabled
 - webp and image-optimizers
+- mariadb support
 
-#### testing this dockerfile:
+### docker-socket
+
+If docker socket has been mounted as a volume into the container,  
+then each startup checks the availability of the docker command and if not available installs it.
+
+## xdebug settings:
+
+Some xdebug settings have been preconfigured, such as:
+- `xdebug.mode=profile,develop,debug`
+- `xdebug.client_port=9003`
+- `xdebug.discover_client_host=1`
+- `xdebug.idekey=PHPSTORM`
+
+Through the environment-variable `XDEBUG_HOST` the client_host can be changed on login
+
+## testing this dockerfile:
 
 just run `git clone && docker-compose up -d` <br />
 then open up your browser and go to this container.
 
 in the app-folder are two files index.php and Test.php.
 They are meant as a playground to test the newest features of php 8.0
-
 

@@ -1,4 +1,4 @@
-FROM php:8.0.0rc1-fpm-alpine
+FROM php:8.0.0rc2-fpm-alpine
 
 ENV TERM="xterm" \
     LANG="C.UTF-8" \
@@ -11,6 +11,8 @@ ENV APPLICATION_USER=application \
     APPLICATION_GID=1000
 ENV NGINX_VERSION 1.19.1
 ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
+ENV XDEBUG_VERSION="3.0.0beta1"
+ENV COMPOSER2_VERSION="2.0.0-alpha3"
 
 COPY conf/ /opt/docker/
 
@@ -146,7 +148,7 @@ RUN go get github.com/Kagami/go-avif \
 STOPSIGNAL SIGQUIT
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
-    &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=2.0.0-alpha3
+    &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=$COMPOSER2_VERSION
 
 USER application
 
@@ -178,7 +180,9 @@ RUN cd /opt/php-libs \
 
 # install xdebug 3.0
 RUN cd /opt/php-libs \
-    && git clone https://github.com/xdebug/xdebug \
+    && wget https://github.com/xdebug/xdebug/archive/$XDEBUG_VERSION.tar.gz \
+    && mkdir xdebug && tar -zxC ./xdebug -f $XDEBUG_VERSION.tar.gz --strip-components 1 \
+    && rm  $XDEBUG_VERSION.tar.gz \
     && cd xdebug \
     # the last working commit, because the php-src is not up to date yet in this alpine
     && phpize \
