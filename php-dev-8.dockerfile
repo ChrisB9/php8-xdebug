@@ -1,4 +1,4 @@
-FROM php:8.0.0rc2-fpm-alpine
+FROM php:8.0.0RC2-fpm-alpine
 
 ENV TERM="xterm" \
     LANG="C.UTF-8" \
