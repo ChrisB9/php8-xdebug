@@ -147,15 +147,13 @@ RUN go get github.com/Kagami/go-avif \
 
 STOPSIGNAL SIGQUIT
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
-    &&  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer2 --version=$COMPOSER2_VERSION
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 
 USER application
 
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /home/application/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /home/application/.git-prompt.sh
-RUN composer global require hirak/prestissimo davidrjonas/composer-lock-diff perftools/php-profiler && \
-    composer clear
+RUN composer global require perftools/php-profiler && composer clear
 COPY user/* /home/application/
 RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
 
