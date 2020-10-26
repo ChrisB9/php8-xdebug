@@ -5,7 +5,7 @@ current features:
 - php 8.0 rc2 (with xdebug, opcache and jit enabled by default)
 - xdebug 3.0 beta1 (set to profile,debug and develop-mode)
 - pcov
-- composer and composer2.0 (available as `composer2`)
+- composer v2.0 (composer 1.0 has been removed)
 - bash (with auto-completion extension and colored)
 - tideways profiler with perf-tools enabled
 - webp and image-optimizers
@@ -25,6 +25,10 @@ Some xdebug settings have been preconfigured, such as:
 - `xdebug.idekey=PHPSTORM`
 
 Through the environment-variable `XDEBUG_HOST` the client_host can be changed on login
+
+### xdebug tools:
+- `xdebug-enable` enabled xdebug and restarts php
+- `xdebug-disable` disables xdebug and restarts php
 
 ## testing this dockerfile:
 
