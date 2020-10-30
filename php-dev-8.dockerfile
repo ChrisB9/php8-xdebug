@@ -187,7 +187,7 @@ RUN cd /opt/php-libs \
     && ./configure --enable-xdebug-dev \
     && make all \
     && mv /opt/php-libs/files/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && mkdir /tmp/debug
+    && mkdir /tmp/debug \
     && chmod -R 777 /tmp/debug
 
 # install tideways
