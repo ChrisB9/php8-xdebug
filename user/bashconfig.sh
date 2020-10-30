@@ -54,7 +54,11 @@ function restartPhp() {
 }
 
 function xdebug-enable() {
-  xdebug-mode "profile,develop,debug"
+  xdebug-mode "profile,develop,coverage"
+}
+
+function xdebug-debug() {
+  xdebug-mode "debug,develop"
 }
 
 function xdebug-disable() {

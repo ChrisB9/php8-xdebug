@@ -19,7 +19,7 @@ then each startup checks the availability of the docker command and if not avail
 ## xdebug settings:
 
 Some xdebug settings have been preconfigured, such as:
-- `xdebug.mode=profile,develop,debug`
+- `xdebug.mode=profile,develop,coverage`
 - `xdebug.client_port=9003`
 - `xdebug.discover_client_host=1`
 - `xdebug.idekey=PHPSTORM`
