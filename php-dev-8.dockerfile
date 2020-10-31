@@ -166,20 +166,14 @@ COPY php/* /opt/php-libs/files/
 RUN mv /opt/php-libs/files/opcache-jit.ini /usr/local/etc/php/conf.d/docker-php-opcache-jit.ini
 
 # install pcntl
-RUN cd /opt/php-libs \
-    && docker-php-ext-configure pcntl --enable-pcntl \
-    && docker-php-ext-install pcntl 
+RUN docker-php-ext-configure pcntl --enable-pcntl \
+    && docker-php-ext-install pcntl
 
 # install pcov
-RUN cd /opt/php-libs \
-    && git clone https://github.com/krakjoe/pcov.git \
-    && cd pcov \
-    && phpize \
-    && ./configure --enable-pcov \
-    && make \
-    && make install \
-    && docker-php-ext-enable pcov \
-    && mv /opt/php-libs/files/pcov.ini /usr/local/etc/php/conf.d/docker-php-pcov.ini
+RUN git clone --depth 1 https://github.com/krakjoe/pcov.git /usr/src/php/ext/pcov \
+    && docker-php-ext-configure pcov --enable-pcov \
+    && docker-php-ext-install pcov \
+    && mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini"
 
 # install xdebug 3.0
 RUN cd /opt/php-libs \
@@ -196,15 +190,11 @@ RUN cd /opt/php-libs \
     && chmod -R 777 /tmp/debug
 
 # install tideways
-RUN cd /opt/php-libs \
-     && git clone https://github.com/tideways/php-xhprof-extension \
-     && cd php-xhprof-extension \
-     && phpize \
-     && ./configure \
-     && make \
-     && make install \
-     && mkdir -p /opt/docker/profiler \
-     && mv /opt/php-libs/files/xhprof.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini
+RUN git clone --depth 1 https://github.com/tideways/php-xhprof-extension /usr/src/php/ext/xhprof \
+    && docker-php-ext-configure xhprof \
+    && docker-php-ext-install xhprof \
+    && mkdir -p /opt/docker/profiler \
+    && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini"
 
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
