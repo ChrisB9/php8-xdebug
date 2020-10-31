@@ -192,7 +192,7 @@ RUN git clone --depth 1 https://github.com/tideways/php-xhprof-extension /usr/sr
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
 RUN mkdir -p /var/log/supervisord
-EXPOSE 80 443 9000
+EXPOSE 80 443 9003
 CMD ["/usr/bin/supervisord", "-nc", "/opt/docker/supervisord.conf"]
 
 WORKDIR /app
