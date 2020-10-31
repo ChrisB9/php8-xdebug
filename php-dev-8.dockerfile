@@ -165,6 +165,11 @@ COPY php/* /opt/php-libs/files/
 # activate opcache and jit
 RUN mv /opt/php-libs/files/opcache-jit.ini /usr/local/etc/php/conf.d/docker-php-opcache-jit.ini
 
+# install pcntl
+RUN cd /opt/php-libs \
+    && docker-php-ext-configure pcntl --enable-pcntl \
+    && docker-php-ext-install pcntl 
+
 # install pcov
 RUN cd /opt/php-libs \
     && git clone https://github.com/krakjoe/pcov.git \
