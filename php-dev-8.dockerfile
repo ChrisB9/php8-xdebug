@@ -44,7 +44,7 @@ RUN apk add --no-cache \
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \
+    && echo "%$APPLICATION_GROUP ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$APPLICATION_GROUP \
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 
 RUN mkdir -p /usr/src \
@@ -163,48 +163,36 @@ RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files/
 
 # activate opcache and jit
-RUN mv /opt/php-libs/files/opcache-jit.ini /usr/local/etc/php/conf.d/docker-php-opcache-jit.ini
+RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
+
+# install pcntl
+RUN docker-php-ext-configure pcntl --enable-pcntl \
+    && docker-php-ext-install pcntl
 
 # install pcov
-RUN cd /opt/php-libs \
-    && git clone https://github.com/krakjoe/pcov.git \
-    && cd pcov \
-    && phpize \
-    && ./configure --enable-pcov \
-    && make \
-    && make install \
-    && docker-php-ext-enable pcov \
-    && mv /opt/php-libs/files/pcov.ini /usr/local/etc/php/conf.d/docker-php-pcov.ini
+RUN git clone --depth 1 https://github.com/krakjoe/pcov.git /usr/src/php/ext/pcov \
+    && docker-php-ext-configure pcov --enable-pcov \
+    && docker-php-ext-install pcov \
+    && mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini"
 
 # install xdebug 3.0
-RUN cd /opt/php-libs \
-    && wget https://github.com/xdebug/xdebug/archive/$XDEBUG_VERSION.tar.gz \
-    && mkdir xdebug && tar -zxC ./xdebug -f $XDEBUG_VERSION.tar.gz --strip-components 1 \
-    && rm  $XDEBUG_VERSION.tar.gz \
-    && cd xdebug \
-    # the last working commit, because the php-src is not up to date yet in this alpine
-    && phpize \
-    && ./configure --enable-xdebug-dev \
-    && make all \
-    && mv /opt/php-libs/files/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && mkdir /tmp/debug \
-    && chmod -R 777 /tmp/debug
+RUN git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
+    && docker-php-ext-configure xdebug --enable-xdebug-dev \
+    && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
+    && docker-php-ext-install xdebug \
+    && mkdir /tmp/debug
 
 # install tideways
-RUN cd /opt/php-libs \
-     && git clone https://github.com/tideways/php-xhprof-extension \
-     && cd php-xhprof-extension \
-     && phpize \
-     && ./configure \
-     && make \
-     && make install \
-     && mkdir -p /opt/docker/profiler \
-     && mv /opt/php-libs/files/xhprof.ini /usr/local/etc/php/conf.d/docker-php-ext-xhprof.ini
+RUN git clone --depth 1 https://github.com/tideways/php-xhprof-extension /usr/src/php/ext/xhprof \
+    && docker-php-ext-configure xhprof \
+    && docker-php-ext-install xhprof \
+    && mkdir -p /opt/docker/profiler \
+    && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini"
 
 RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
     && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
 RUN mkdir -p /var/log/supervisord
-EXPOSE 80 443 9000
+EXPOSE 80 443 9003
 CMD ["/usr/bin/supervisord", "-nc", "/opt/docker/supervisord.conf"]
 
 WORKDIR /app
