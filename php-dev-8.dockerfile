@@ -44,7 +44,7 @@ RUN apk add --no-cache \
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \
+    && echo "%$APPLICATION_GROUP ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$APPLICATION_GROUP \
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 
 RUN mkdir -p /usr/src \
@@ -163,7 +163,7 @@ RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files/
 
 # activate opcache and jit
-RUN mv /opt/php-libs/files/opcache-jit.ini /usr/local/etc/php/conf.d/docker-php-opcache-jit.ini
+RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
 
 # install pcntl
 RUN docker-php-ext-configure pcntl --enable-pcntl \
@@ -185,7 +185,7 @@ RUN cd /opt/php-libs \
     && phpize \
     && ./configure --enable-xdebug-dev \
     && make all \
-    && mv /opt/php-libs/files/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
     && mkdir /tmp/debug \
     && chmod -R 777 /tmp/debug
 
