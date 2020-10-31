@@ -176,18 +176,11 @@ RUN git clone --depth 1 https://github.com/krakjoe/pcov.git /usr/src/php/ext/pco
     && mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini"
 
 # install xdebug 3.0
-RUN cd /opt/php-libs \
-    && wget https://github.com/xdebug/xdebug/archive/$XDEBUG_VERSION.tar.gz \
-    && mkdir xdebug && tar -zxC ./xdebug -f $XDEBUG_VERSION.tar.gz --strip-components 1 \
-    && rm  $XDEBUG_VERSION.tar.gz \
-    && cd xdebug \
-    # the last working commit, because the php-src is not up to date yet in this alpine
-    && phpize \
-    && ./configure --enable-xdebug-dev \
-    && make all \
+RUN git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
+    && docker-php-ext-configure xdebug --enable-xdebug-dev \
     && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
-    && mkdir /tmp/debug \
-    && chmod -R 777 /tmp/debug
+    && docker-php-ext-install xdebug \
+    && mkdir /tmp/debug
 
 # install tideways
 RUN git clone --depth 1 https://github.com/tideways/php-xhprof-extension /usr/src/php/ext/xhprof \
