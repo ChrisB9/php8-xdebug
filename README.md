@@ -2,14 +2,17 @@
 
 current features:
 - nginx with brotli and http2 enabled
-- php 8.0 rc2 (with xdebug, opcache and jit enabled by default)
-- xdebug 3.0 beta1 (set to profile,debug and develop-mode)
+- php 8.0 rc5 (with xdebug, opcache and jit enabled by default)
+- xdebug 3.0 (set to profile, debug and develop-mode)
 - pcov
 - composer v2.0 (composer 1.0 has been removed)
 - bash (with auto-completion extension and colored)
 - tideways profiler with perf-tools enabled
 - webp and image-optimizers
 - mariadb support
+
+planned:
+- mongodb support
 
 ### docker-socket
 
