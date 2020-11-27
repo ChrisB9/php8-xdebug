@@ -13,6 +13,10 @@ current features:
 
 planned:
 - mongodb support
+- alternative ubuntu-based image
+- apache-based image
+- cli-only-based image
+- easier extension installation
 
 ### docker-socket
 
