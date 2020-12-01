@@ -2,7 +2,7 @@
 
 current features:
 - nginx with brotli and http2 enabled
-- php 8.0 rc5 (with xdebug, opcache and jit enabled by default)
+- php 8.0 ✨ (GA) (with xdebug, opcache and jit enabled by default)
 - xdebug 3.0 (set to profile, debug and develop-mode)
 - pcov
 - composer v2.0 (composer 1.0 has been removed)
@@ -13,7 +13,7 @@ current features:
 
 planned:
 - mongodb support
-- alternative ubuntu-based image
+- alternative debian-based image
 - apache-based image
 - cli-only-based image
 - easier extension installation
