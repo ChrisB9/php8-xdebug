@@ -1,0 +1,3 @@
+template_path = "../templates/"
+output_path = "../"
+base_template = "template.dockerfile"
