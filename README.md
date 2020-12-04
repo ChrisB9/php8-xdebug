@@ -2,14 +2,21 @@
 
 current features:
 - nginx with brotli and http2 enabled
-- php 8.0 rc2 (with xdebug, opcache and jit enabled by default)
-- xdebug 3.0 beta1 (set to profile,debug and develop-mode)
+- php 8.0 ✨ (GA) (with xdebug, opcache and jit enabled by default)
+- xdebug 3.0 (set to profile, debug and develop-mode)
 - pcov
-- composer and composer2.0 (available as `composer2`)
+- composer v2.0 (composer 1.0 has been removed)
 - bash (with auto-completion extension and colored)
 - tideways profiler with perf-tools enabled
 - webp and image-optimizers
 - mariadb support
+
+planned:
+- mongodb support
+- alternative debian-based image
+- apache-based image
+- cli-only-based image
+- easier extension installation
 
 ### docker-socket
 
@@ -19,12 +26,16 @@ then each startup checks the availability of the docker command and if not avail
 ## xdebug settings:
 
 Some xdebug settings have been preconfigured, such as:
-- `xdebug.mode=profile,develop,debug`
+- `xdebug.mode=profile,develop,coverage`
 - `xdebug.client_port=9003`
 - `xdebug.discover_client_host=1`
 - `xdebug.idekey=PHPSTORM`
 
 Through the environment-variable `XDEBUG_HOST` the client_host can be changed on login
+
+### xdebug tools:
+- `xdebug-enable` enabled xdebug and restarts php
+- `xdebug-disable` disables xdebug and restarts php
 
 ## testing this dockerfile:
 
