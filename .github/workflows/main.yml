@@ -61,7 +61,7 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: Dockerfile-dev-alpine
-          path: Dockerfile
+          path: .
       - name: update php-dev-8.dockerfile
         run: cp Dockerfile php-dev-8.dockerfile
       - uses: stefanzweifel/git-auto-commit-action@v4
@@ -89,22 +89,21 @@ jobs:
       matrix:
         cli: [ dev, prod ]
         type: [ alpine, debian, cli ]
-        variant: [ nginx, none ]
     steps:
       - name: checkout
         uses: actions/checkout@v2
       - uses: actions/download-artifact@master
         with:
           name: Dockerfile-${{ matrix.cli }}-${{ matrix.type }}
-          path: Dockerfile
+          path: .
       - name: Build and Push Dockerfile ${{ matrix.cli }} ${{ matrix.type }}
         uses: docker/build-push-action@v1.1.0
         env:
-          DEV_ENV: ${{ matrix.type == 'dev' && '-dev' || '' }}
+          DEV_ENV: ${{ matrix.cli == 'dev' && '-dev' || '' }}
           VARIANT_ENV: ${{ matrix.type == 'cli' && '' || '-nginx' }}
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: chrisb9/php8
-          tags: ${{ matrix.cli }}${VARIANT_ENV}${DEV_ENV}
+          tags: ${{ matrix.type }}${{ env.VARIANT_ENV }}${{ env.DEV_ENV }}
           path: .
