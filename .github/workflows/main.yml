@@ -22,13 +22,14 @@ jobs:
         with:
           name: generator
           path: generator/target/release/generator
+          retention-days: 1
   generate:
     runs-on: ubuntu-20.04
     needs: [compile]
     strategy:
       matrix:
-        cli: [dev, prod]
-        type: [alpine, debian, cli]
+        cli: [ dev, prod ]
+        type: [ alpine, debian, cli ]
     steps:
       - name: checkout
         uses: actions/checkout@v1
@@ -45,3 +46,65 @@ jobs:
         uses: brpaz/hadolint-action@master
         with:
           dockerfile: "Dockerfile"
+      - name: upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: Dockerfile-${{ matrix.cli }}-${{ matrix.type }}
+          path: Dockerfile
+          retention-days: 1
+  build-bc:
+    runs-on: ubuntu-20.04
+    needs: [ generate ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: Dockerfile-dev-alpine
+          path: Dockerfile
+      - name: update php-dev-8.dockerfile
+        run: cp Dockerfile php-dev-8.dockerfile
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        with:
+          commit_message: "GitHub-Action: Update php 8.0 alpine dockerfile"
+      - name: Build image
+        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: docker build . --file php-dev-8.dockerfile --tag php8-nginx-xdebug
+      - name: Log into registry
+        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Push image
+        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: |
+          IMAGE_NAME=php8-nginx-xdebug
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          docker tag $IMAGE_NAME $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
+  build-docker:
+    runs-on: ubuntu-20.04
+    needs: [ generate ]
+    strategy:
+      matrix:
+        cli: [ dev, prod ]
+        type: [ alpine, debian, cli ]
+        variant: [ nginx, none ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: Dockerfile-${{ matrix.cli }}-${{ matrix.type }}
+          path: Dockerfile
+      - name: Build and Push Dockerfile ${{ matrix.cli }} ${{ matrix.type }}
+        uses: docker/build-push-action@v1.1.0
+        env:
+          DEV_ENV: ${{ matrix.type == 'dev' && '-dev' || '' }}
+          VARIANT_ENV: ${{ matrix.type == 'cli' && '' || '-nginx' }}
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: chrisb9/php8
+          tags: ${{ matrix.cli }}${{ VARIANT_ENV }}${{ DEV_ENV }}
+          path: .
