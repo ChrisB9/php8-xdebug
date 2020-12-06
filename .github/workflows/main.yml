@@ -24,7 +24,7 @@ jobs:
           path: target/release/generator
   generate:
     runs-on: ubuntu-20.04
-    needs: [checkout, compile]
+    needs: [compile]
     strategy:
       matrix:
         cli: [dev, prod]
