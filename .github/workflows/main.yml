@@ -6,7 +6,6 @@ on:
 jobs:
   compile:
     runs-on: ubuntu-20.04
-    needs: checkout
     steps:
       - name: checkout
         uses: actions/checkout@v1
