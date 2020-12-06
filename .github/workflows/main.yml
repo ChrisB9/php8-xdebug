@@ -35,12 +35,7 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: generator
-          path: generator/generator
-      - name: show files
-        run: |
-          ls -la
-          ls -la generator/
-          ls -la generator/generator
+          path: generator
       - name: generate dockerfiles
         run: generator/generator ${{ matrix.cli }} --type={{ matrix.type }}
       - name: lint dockerfiles
