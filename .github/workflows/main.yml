@@ -4,15 +4,12 @@ on:
     branches: [ feature/templating ]
 
 jobs:
-  checkout:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v1
   compile:
     runs-on: ubuntu-20.04
     needs: checkout
     steps:
+      - name: checkout
+        uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -21,7 +18,11 @@ jobs:
           cd generator
           # build rust application
           cargo build --release
-          cd ..
+      - name: upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: generator
+          path: target/release/generator
   generate:
     runs-on: ubuntu-20.04
     needs: [checkout, compile]
@@ -30,6 +31,12 @@ jobs:
         cli: [dev, prod]
         type: [alpine, debian, cli]
     steps:
+      - name: checkout
+        uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: generator
+          path: generator/generator
       - name: generate dockerfiles
         run: |
           cd generator
