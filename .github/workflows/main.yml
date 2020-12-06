@@ -106,5 +106,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: chrisb9/php8
-          tags: ${{ matrix.cli }}${{ VARIANT_ENV }}${{ DEV_ENV }}
+          tags: ${{ matrix.cli }}${VARIANT_ENV}${DEV_ENV}
           path: .
