@@ -21,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: generator
-          path: target/release/generator
+          path: generator/target/release/generator
   generate:
     runs-on: ubuntu-20.04
     needs: [compile]
