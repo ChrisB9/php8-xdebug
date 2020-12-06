@@ -37,10 +37,7 @@ jobs:
           name: generator
           path: generator/generator
       - name: generate dockerfiles
-        run: |
-          cd generator
-          target/debug/generator ${{ matrix.cli }} --type={{ matrix.type }}
-          cd ..
+        run: generator/generator ${{ matrix.cli }} --type={{ matrix.type }}
       - name: lint dockerfiles
         uses: brpaz/hadolint-action@master
         with:
