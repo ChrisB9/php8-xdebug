@@ -1,23 +1,28 @@
-#[derive(Serialize)]
+use std::collections::HashMap;
+
+#[derive(PartialOrd, PartialEq, Debug, Serialize)]
 pub enum ContainerType {
     ALPINE,
-    UBUNTU,
+    DEBIAN,
+    CLI,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Dockerfile {
     pub from: String,
     pub container_type: ContainerType,
-    pub envs: String,
+    pub envs: HashMap<String, String>,
+    pub use_apk: bool,
+    pub is_web: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ProdDockerfile {
     pub base: Dockerfile,
     pub is_dev: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct DevDockerfile {
     pub base: Dockerfile,
     pub is_dev: bool,

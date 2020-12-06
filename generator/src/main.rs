@@ -10,10 +10,11 @@ mod generate;
 
 use structs::*;
 use generate::Generate;
-use seahorse::{App, Context, Command};
+use seahorse::{App, Context, Command, Flag, FlagType};
 use std::env;
 use std::fmt::Display;
 use terminal_color_builder::OutputFormatter as tcb;
+use seahorse::error::FlagError;
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -29,20 +30,41 @@ fn success<T: Display>(t: T) -> () {
     println!("{}", tcb::new().fg().hex("#fff").bg().green().text(t.to_string()).print());
 }
 
+fn error<T: Display>(t: T) -> String {
+    format!("{}", tcb::new().fg().hex("#fff").bg().red().text(t.to_string()).print())
+}
+
 fn cmd(str: &str) -> String {
     tcb::new().fg().hex("#6f0").text_str(str).print()
 }
 
-fn generate_prod_action(_c: &Context) {
-    let dockerfile: ProdDockerfile = Generate::new(Option::from(ContainerType::ALPINE));
+fn parse_container_type(c: &Context) -> ContainerType {
+    match c.string_flag("type") {
+        Ok(t) => match &*t {
+            "alpine" => ContainerType::ALPINE,
+            "debian" => ContainerType::DEBIAN,
+            "cli" => ContainerType::CLI,
+            _ => panic!("{} {} {}", error("undefined container-type"), t, ": available types are debian, alpine, cli")
+        }
+        Err(e) => match e {
+            FlagError::NotFound => ContainerType::ALPINE,
+            _ => panic!("{} {:?}", error("Flag-Error"), e),
+        }
+    }
+}
+
+fn generate_prod_action(c: &Context) {
+    let container_type = parse_container_type(c);
+    let dockerfile: ProdDockerfile = Generate::new(Option::from(container_type));
     match dockerfile.to_file() {
         Err(e) => panic!(format!("{:?}", e)),
         _ => success("Successfully generated file"),
     }
 }
 
-fn generate_test_action(_c: &Context) {
-    let dockerfile: DevDockerfile = Generate::new(Option::from(ContainerType::ALPINE));
+fn generate_test_action(c: &Context) {
+    let container_type = parse_container_type(c);
+    let dockerfile: DevDockerfile = Generate::new(Option::from(container_type));
     match dockerfile.to_file() {
         Err(e) => panic!(format!("{:?}", e)),
         _ => success("Successfully generated file"),
@@ -55,6 +77,11 @@ fn generate_prod() -> Command {
         .alias(cmd("p"))
         .usage(cmd("cli prod"))
         .action(generate_prod_action)
+        .flag(
+            Flag::new("type", FlagType::String)
+                .description(cmd("Build either a debian-based or a alpine-based image (--type=debian or --type=alpine)"))
+                .alias("t")
+        )
 }
 
 fn generate_test() -> Command {
@@ -63,4 +90,9 @@ fn generate_test() -> Command {
         .alias(cmd("d"))
         .usage(cmd("cli dev"))
         .action(generate_test_action)
+        .flag(
+            Flag::new("type", FlagType::String)
+                .description(cmd("Build either a debian-based or a alpine-based image (--type=debian or --type=alpine)"))
+                .alias("t")
+        )
 }

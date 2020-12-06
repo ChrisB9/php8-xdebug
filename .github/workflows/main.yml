@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches: [ feature/templating ]
+
+jobs:
+  checkout:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+  compile:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: |
+          # enter generator directory
+          cd generator
+          # build rust application
+          cargo build --release
+          cd ..
+  generate:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        cli: [dev, prod]
+        type: [alpine, debian, cli]
+    steps:
+      - name: generate dockerfiles
+        run: |
+          cd generator
+          target/debug/generator ${{ matrix.cli }} --type={{ matrix.type }}
+          cd ..
+      - name: lint dockerfiles
+        uses: brpaz/hadolint-action@master
+        with:
+          dockerfile: "Dockerfile"

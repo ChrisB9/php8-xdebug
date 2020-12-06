@@ -2,6 +2,7 @@ use tinytemplate::TinyTemplate;
 use std::{fs::{File, read_dir}, io::prelude::*, collections::HashMap, path::Path, io};
 use failure::Fail;
 use serde::Serialize;
+use serde::export::fmt::Debug;
 
 #[derive(Fail, Debug)]
 #[fail(display = "An error occurred while parsing the template: {}.", _0)]
@@ -53,7 +54,7 @@ impl TemplateFileCollection {
 
     pub fn add_file_content(&mut self, file: &str) -> io::Result<()> {
         let contents = TemplateFileCollection::read_file(file).unwrap();
-        let mut filename = Path::new(&file).file_name().unwrap();
+        let filename = Path::new(&file).file_name().unwrap();
         let mut filename = String::from(filename.to_str().unwrap());
         filename = filename.replace(".", "_");
         self.template_content.insert(filename, contents);
@@ -72,7 +73,7 @@ impl Parsing {
         Box::new(TemplatingError(String::from(message)))
     }
 
-    pub fn render<S>(&self, context: &S) -> Result<String, Box<TemplatingError>> where S: Serialize {
+    pub fn render<S>(&self, context: &S) -> Result<String, Box<TemplatingError>> where S: Serialize + Debug {
         let mut template = TinyTemplate::new();
         let mut collection = TemplateFileCollection::new();
         match collection.read_for_dir(&self.config["template_path"]) {
@@ -82,16 +83,11 @@ impl Parsing {
         for file in &collection.template_content {
             match template.add_template(file.0, file.1) {
                 Ok(_r) => (),
-                Err(_e) => return Err(self.get_error(&format!("Failed parsing template directory for file {:?}", file.0))),
+                Err(_e) => return Err(self.get_error(&format!("Failed parsing template directory for dockerfile {:?} {:?}", _e, context))),
             };
         }
-        let file = TemplateFileCollection::read_file(&self.config["base_template"]).unwrap();
-        match template.add_template("dockerfile", &file) {
-            Ok(_r) => (),
-            Err(_e) => return Err(self.get_error(&format!("Failed parsing template directory for dockerfile {:?} {:?}", _e, collection.template_content))),
-        };
 
-        return match template.render("dockerfile", &context) {
+        return match template.render(&self.config["base_template"], &context) {
             Err(e) => {
                 println!("{}", e);
                 Err(self.get_error("Rendering Template failed"))

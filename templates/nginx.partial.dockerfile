@@ -74,7 +74,7 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
     && echo "load_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;" >> /etc/nginx/modules-enabled/brotli.conf \
     && ln -s /usr/lib/nginx/modules /etc/nginx/modules \
     && strip /usr/sbin/nginx* \
-    && mv /usr/bin/envsubst /tmp/ \
+    && mv /usr/bin/envsubst /tmp/ \ {{- if use_apk }}
     && runDeps="$( \
         scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
             | awk '\{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
@@ -82,7 +82,9 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
             | xargs -r apk info --installed \
             | sort -u \
     )" \
-    && apk add --no-cache --virtual .nginx-rundeps tzdata $runDeps \
+    && apk add --no-cache --virtual .nginx-rundeps tzdata $runDeps \ {{- else }}
+    && apt-get update && apt-get install -y --no-install-recommends libperl-dev python3-pip tzdata \
+    && rm -rf /var/lib/apt/lists/* \ {{- endif }}
     && mv /tmp/envsubst /usr/local/bin/ \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log \

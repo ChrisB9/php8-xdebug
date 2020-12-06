@@ -7,8 +7,9 @@ use std::io::prelude::*;
 use crate::structs::ContainerType;
 use config::Config;
 use std::collections::HashMap;
+use serde::export::fmt::Debug;
 
-pub trait Generate: Serialize {
+pub trait Generate: Serialize + Debug {
     fn new(container_type: Option<ContainerType>) -> Self;
 
     fn load_config(&self) -> HashMap<String, String> {
@@ -27,7 +28,8 @@ pub trait Generate: Serialize {
     }
 
     fn to_file(&self) -> Result<(), failure::Error> {
-        let filename: &str = "Dockerfile";
+        let config = self.load_config();
+        let filename: &str = &config["output_path"];
         if Path::new(filename).exists() {
             fs::remove_file(filename)?;
         }

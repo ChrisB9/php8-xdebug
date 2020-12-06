@@ -3,12 +3,19 @@ version: '3.5'
 services:
   php:
     build:
-      dockerfile: php-dev-8.dockerfile
+      dockerfile: Dockerfile
       context: .
     volumes:
       - ./app:/app
     environment:
       - VIRTUAL_HOST=php8.local.cben.dev
+
+  lint:
+    image: hadolint/hadolint
+    volumes:
+    - ./.hadolint.yaml:/root/.config/.hadolint.yaml:ro
+    - ./Dockerfile:/Dockerfile:ro
+    command: "hadolint /Dockerfile"
 
 networks:
   default:

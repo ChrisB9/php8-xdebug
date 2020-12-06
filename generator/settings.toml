@@ -1,3 +1,3 @@
 template_path = "../templates/"
-output_path = "../"
-base_template = "template.dockerfile"
+output_path = "../Dockerfile"
+base_template = "template_dockerfile"
