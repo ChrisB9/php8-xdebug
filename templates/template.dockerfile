@@ -26,7 +26,7 @@ COPY conf/ /opt/docker/
 {{ if base.use_apk }}
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
-RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP
+RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
 {{- if is_dev }} && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 {{ else }}
