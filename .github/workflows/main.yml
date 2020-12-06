@@ -36,6 +36,11 @@ jobs:
         with:
           name: generator
           path: generator/generator
+      - name: show files
+        run: |
+          ls -la
+          ls -la generator/
+          ls -la generator/generator
       - name: generate dockerfiles
         run: generator/generator ${{ matrix.cli }} --type={{ matrix.type }}
       - name: lint dockerfiles
