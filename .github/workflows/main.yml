@@ -11,6 +11,7 @@ jobs:
         uses: actions/checkout@v1
   compile:
     runs-on: ubuntu-20.04
+    needs: checkout
     steps:
       - uses: actions-rs/toolchain@v1
         with:
@@ -23,6 +24,7 @@ jobs:
           cd ..
   generate:
     runs-on: ubuntu-20.04
+    needs: [checkout, compile]
     strategy:
       matrix:
         cli: [dev, prod]
