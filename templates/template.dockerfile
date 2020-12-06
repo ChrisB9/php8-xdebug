@@ -33,7 +33,7 @@ RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP
 {{- if base.is_web }}
 RUN groupadd -g 103 nginx \
     && adduser --gecos "" --disabled-password --system --home /var/cache/nginx --shell /sbin/nologin --ingroup nginx nginx {{- endif }}
-RUN groupadd -g $APPLICATION_GID $APPLICATION_GROUP
+RUN groupadd -g $APPLICATION_GID $APPLICATION_GROUP \
 {{- if is_dev }} && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
     && adduser --gecos "" --disabled-password --uid $APPLICATION_UID --shell /bin/bash --ingroup $APPLICATION_GROUP $APPLICATION_USER
 {{ endif }}
