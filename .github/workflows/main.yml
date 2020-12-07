@@ -1,7 +1,8 @@
 name: CI
 on:
   push:
-    branches: [ feature/templating ]
+    branches:
+      - '*'
 
 jobs:
   compile:
@@ -24,6 +25,7 @@ jobs:
           path: generator/target/release/generator
           retention-days: 1
   generate:
+    name: Generate and lint Dockerfiles
     runs-on: ubuntu-20.04
     needs: [compile]
     strategy:
@@ -40,8 +42,7 @@ jobs:
       - name: generate dockerfiles
         run: |
           chmod +x generator/generator
-          cd generator
-          ./generator ${{ matrix.cli }} --type=${{ matrix.type }}
+          generator/generator ${{ matrix.cli }} --type=${{ matrix.type }}
       - name: lint dockerfiles
         uses: brpaz/hadolint-action@master
         with:
@@ -55,6 +56,7 @@ jobs:
   build-bc:
     runs-on: ubuntu-20.04
     needs: [ generate ]
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -84,6 +86,7 @@ jobs:
   build-docker:
     runs-on: ubuntu-20.04
     needs: [ generate ]
+    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         cli: [ dev, prod ]
@@ -106,6 +109,21 @@ jobs:
           repository: chrisb9/php8
           tags: ${{ matrix.type }}${{ env.VARIANT_ENV }}${{ env.DEV_ENV }}
           path: .
+      - name: push README to Dockerhub
+        uses: christian-korneck/update-container-description-action@v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          destination_container_repo: chrisb9/php8
+          provider: dockerhub
+          readme_file: 'README.md'
+  sync-readme:
+    runs-on: ubuntu-20.04
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
       - name: push README to Dockerhub
         uses: christian-korneck/update-container-description-action@v1
         env:
