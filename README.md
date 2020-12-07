@@ -1,3 +1,5 @@
+![CI](https://github.com/ChrisB9/php8-xdebug/workflows/CI/badge.svg?branch=main)
+
 # PHP 8.0 for development and production
 
 > **Note**:  
