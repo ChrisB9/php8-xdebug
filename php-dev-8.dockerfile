@@ -12,38 +12,59 @@ ENV APPLICATION_USER=application \
 ENV NGINX_VERSION 1.19.1
 ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
 ENV XDEBUG_VERSION="3.0.0"
+ENV IS_CLI=false
 
 COPY conf/ /opt/docker/
-
 # install dependencies
 RUN apk add --no-cache \
-    		gcc \
-    		libc-dev \
-    		make \
-    		openssl-dev \
-    		pcre-dev \
-    		zlib-dev \
-    		linux-headers \
+    		aom-dev \
+    		bash-completion \
     		curl \
-    		gnupg1 \
-    		libxslt-dev \
     		gd-dev \
     		geoip-dev \
-    		perl-dev \
-    		autoconf \
-    		libtool \
-    		automake \
     		git \
-    		g++ \
-    		cmake \
+    		git \
+    		gnupg1 \
+    		imagemagick \
+    		jpegoptim \
+    		less \
+    		libffi-dev \
+    		libwebp-tools \
+    		libxslt-dev \
+    		make \
+    		mariadb-client \
+    		openssh \
+    		openssl-dev \
+    		optipng \
+    		pcre-dev \
+    		pngquant \
+    		sshpass \
     		sudo \
-    	&& apk add --no-cache --virtual .gettext gettext
+    		supervisor \
+    		tree \
+    		vim \
+    		wget \
+    		zlib-dev \
+    	&& apk add --no-cache --virtual .build-deps \
+    	    autoconf \
+    	    automake \
+    	    cmake \
+    	    g++ \
+    	    gcc \
+    	    gettext \
+    		go \
+    		libc-dev \
+    		libtool \
+    		linux-headers \
+    		perl-dev
+
 
 # Add groups and users
+
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-    && echo "%$APPLICATION_GROUP ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$APPLICATION_GROUP \
+    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 
 RUN mkdir -p /usr/src \
@@ -138,7 +159,9 @@ RUN mkdir -p /etc/nginx/modules-enabled/ \
     && touch /app/index.html \
     && echo "<h1>It Works!</h1>" >> /app/index.html
 
-RUN apk update && apk add --no-cache supervisor openssh libwebp-tools sshpass go aom-dev imagemagick jpegoptim optipng pngquant git wget vim nano less tree bash-completion mariadb-client
+# hadolint ignore=DL3022
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
+
 RUN go get github.com/Kagami/go-avif \
     && cd /root/go/src/github.com/Kagami/go-avif \
     && make all \
@@ -148,10 +171,15 @@ STOPSIGNAL SIGQUIT
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 
+# hadolint ignore=SC2046
+RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
+
 USER application
 
-RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /home/application/.git-completion.bash \
-    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /home/application/.git-prompt.sh
+# hadolint ignore=SC2046
+RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-completion.bash > /home/application/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-prompt.sh > /home/application/.git-prompt.sh
 RUN composer global require perftools/php-profiler && composer clear
 COPY user/* /home/application/
 RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
@@ -164,32 +192,24 @@ COPY php/* /opt/php-libs/files/
 # activate opcache and jit
 RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
 
-# install pcntl
-RUN docker-php-ext-configure pcntl --enable-pcntl \
-    && docker-php-ext-install pcntl
-
-# install pcov
-RUN git clone --depth 1 https://github.com/krakjoe/pcov.git /usr/src/php/ext/pcov \
-    && docker-php-ext-configure pcov --enable-pcov \
-    && docker-php-ext-install pcov \
-    && mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini"
-
-# install xdebug 3.0
-RUN git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
+RUN install-php-extensions \
+    pcov \
+    ffi \
+    gd \
+    pcntl
+RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
+    && mkdir /tmp/debug \
+    && chmod -R 777 /tmp/debug \
+    # && mkdir -p /opt/docker/profiler \
+    # && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini" \
+    && git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
     && docker-php-ext-configure xdebug --enable-xdebug-dev \
     && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
-    && docker-php-ext-install xdebug \
-    && mkdir /tmp/debug
+    && docker-php-ext-install xdebug
 
-# install tideways
-RUN git clone --depth 1 https://github.com/tideways/php-xhprof-extension /usr/src/php/ext/xhprof \
-    && docker-php-ext-configure xhprof \
-    && docker-php-ext-install xhprof \
-    && mkdir -p /opt/docker/profiler \
-    && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini"
 
-RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
-    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print $NF}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
+RUN apk del .build-deps .nginx-rundeps
+
 RUN mkdir -p /var/log/supervisord
 EXPOSE 80 443 9003
 CMD ["/usr/bin/supervisord", "-nc", "/opt/docker/supervisord.conf"]
