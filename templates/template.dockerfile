@@ -76,8 +76,9 @@ COPY php/* /opt/php-libs/files/
 RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
 
 RUN install-php-extensions \ {{- if is_dev }}
-    pcov \
-    ffi \ {{- endif }}
+    pcov \ {{- endif }}
+    mongodb \
+    ffi \
     gd \
     pcntl
 
