@@ -65,17 +65,16 @@ jobs:
       - name: update php-dev-8.dockerfile
         run: cp Dockerfile php-dev-8.dockerfile
       - uses: stefanzweifel/git-auto-commit-action@v4
-        if: steps.auto-commit-action.outputs.changes_detected == 'true'
         with:
           commit_message: "GitHub-Action: Update php 8.0 alpine dockerfile"
       - name: Build image
-        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
         run: docker build . --file php-dev-8.dockerfile --tag php8-nginx-xdebug
       - name: Log into registry
-        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
-        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
         run: |
           IMAGE_NAME=php8-nginx-xdebug
           IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME

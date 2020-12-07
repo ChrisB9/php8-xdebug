@@ -26,15 +26,15 @@ COPY conf/ /opt/docker/
 {{ if base.use_apk }}
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
-RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-{{- if is_dev }} && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
+RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \ {{- if is_dev }}
+    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
     && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
 {{ else }}
 {{- if base.is_web }}
 RUN groupadd -g 103 nginx \
     && adduser --gecos "" --disabled-password --system --home /var/cache/nginx --shell /sbin/nologin --ingroup nginx nginx {{- endif }}
-RUN groupadd -g $APPLICATION_GID $APPLICATION_GROUP \
-{{- if is_dev }} && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
+RUN groupadd -g $APPLICATION_GID $APPLICATION_GROUP \ {{- if is_dev }}
+    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \ {{- endif }}
     && adduser --gecos "" --disabled-password --uid $APPLICATION_UID --shell /bin/bash --ingroup $APPLICATION_GROUP $APPLICATION_USER
 {{ endif }}
 
