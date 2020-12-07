@@ -194,6 +194,7 @@ RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcac
 
 RUN install-php-extensions \
     pcov \
+    mongodb \
     ffi \
     gd \
     pcntl
