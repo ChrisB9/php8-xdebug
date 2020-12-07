@@ -1,0 +1,139 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  compile:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            generator/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: |
+          # enter generator directory
+          cd generator
+          # build rust application
+          cargo build --release
+      - name: upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: generator
+          path: generator/target/release/generator
+          retention-days: 1
+  generate:
+    name: Generate and lint Dockerfiles
+    runs-on: ubuntu-20.04
+    needs: [compile]
+    strategy:
+      matrix:
+        cli: [ dev, prod ]
+        type: [ alpine, debian, cli ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: generator
+          path: generator
+      - name: generate dockerfiles
+        run: |
+          chmod +x generator/generator
+          generator/generator ${{ matrix.cli }} --type=${{ matrix.type }}
+      - name: lint dockerfiles
+        uses: brpaz/hadolint-action@master
+        with:
+          dockerfile: "Dockerfile"
+      - name: upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: Dockerfile-${{ matrix.cli }}-${{ matrix.type }}
+          path: Dockerfile
+          retention-days: 1
+  build-bc:
+    runs-on: ubuntu-20.04
+    needs: [ generate ]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: Dockerfile-dev-alpine
+          path: .
+      - name: update php-dev-8.dockerfile
+        run: cp Dockerfile php-dev-8.dockerfile
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "GitHub-Action: Update php 8.0 alpine dockerfile"
+      - name: Build image
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: docker build . --file php-dev-8.dockerfile --tag php8-nginx-xdebug
+      - name: Log into registry
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Push image
+#        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        run: |
+          IMAGE_NAME=php8-nginx-xdebug
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          docker tag $IMAGE_NAME $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
+  build-docker:
+    runs-on: ubuntu-20.04
+    needs: [ generate ]
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        cli: [ dev, prod ]
+        type: [ alpine, debian, cli ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: Dockerfile-${{ matrix.cli }}-${{ matrix.type }}
+          path: .
+      - name: Build and Push Dockerfile ${{ matrix.cli }} ${{ matrix.type }}
+        uses: docker/build-push-action@v1.1.0
+        env:
+          DEV_ENV: ${{ fromJSON('["", "-dev"]')[matrix.cli == 'dev'] }}
+          VARIANT_ENV: ${{ fromJSON('["-nginx", ""]')[matrix.type == 'cli'] }}
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: chrisb9/php8
+          tags: ${{ matrix.type }}${{ env.VARIANT_ENV }}${{ env.DEV_ENV }}
+          path: .
+      - name: push README to Dockerhub
+        uses: christian-korneck/update-container-description-action@v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          destination_container_repo: chrisb9/php8
+          provider: dockerhub
+          readme_file: 'README.md'
+  sync-readme:
+    runs-on: ubuntu-20.04
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: push README to Dockerhub
+        uses: christian-korneck/update-container-description-action@v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          destination_container_repo: chrisb9/php8
+          provider: dockerhub
+          readme_file: 'README.md'

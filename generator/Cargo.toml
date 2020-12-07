@@ -1,0 +1,18 @@
+[package]
+name = "generator"
+version = "0.1.0"
+authors = ["Christian Rodriguez Benthake <git@cben.co>"]
+homepage = "https://cben.dev"
+repository = "https://github.com/ChrisB9/php8-xdebug"
+license = "MIT"
+edition = "2018"
+
+[dependencies]
+tinytemplate = "1.0"
+serde = "^1.0"
+serde_derive = "^1.0"
+failure = "0.1.8"
+failure_derive = "0.1.8"
+seahorse = "1.1"
+terminal_color_builder = "0.1.1"
+config = "^0.10"
