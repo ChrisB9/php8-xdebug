@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+is_root() {
+  return $(id -u)
+}
+
+SUDO="sudo";
+if is_root; then
+  SUDO=""
+fi;
+
+cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|$(cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | grep 'xdebug.mode')|xdebug\.mode\=${@}|g" >> /tmp/xdebug.ini
+$SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+test ! -z "$IS_CLI" && $SUDO supervisorctl -c /opt/docker/supervisord.conf restart php-fpm:php-fpm

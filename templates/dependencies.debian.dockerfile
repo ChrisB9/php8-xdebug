@@ -3,14 +3,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     		apt-transport-https \
     		autoconf \
     		automake \
-            automake \
             bash-completion \
             cmake \
             curl \
             g++ \
             gcc \
             gettext \
-            git \
             git \
             gnupg1 \
             golang-go\
@@ -21,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
             libffi-dev \
             libgd-dev \
             libgeoip-dev \
+            libgit2-dev \
             libpcre3 \
             libpcre3-dev \
             libperl-dev \
@@ -41,4 +40,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     		tree \
     		vim \
     		wget \
-    	&& rm -rf /var/lib/apt/lists/*
+    	&& rm -rf /var/lib/apt/lists/* \
+    	&& curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y

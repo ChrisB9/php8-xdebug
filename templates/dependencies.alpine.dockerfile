@@ -6,12 +6,12 @@ RUN apk add --no-cache \
     		gd-dev \
     		geoip-dev \
     		git \
-    		git \
     		gnupg1 \
     		imagemagick \
     		jpegoptim \
     		less \
     		libffi-dev \
+    		libgit2 \
     		libwebp-tools \
     		libxslt-dev \
     		make \
@@ -31,6 +31,7 @@ RUN apk add --no-cache \
     	&& apk add --no-cache --virtual .build-deps \
     	    autoconf \
     	    automake \
+    	    cargo \
     	    cmake \
     	    g++ \
     	    gcc \
@@ -39,4 +40,6 @@ RUN apk add --no-cache \
     		libc-dev \
     		libtool \
     		linux-headers \
-    		perl-dev
+    		musl-dev \
+    		perl-dev \
+    		rust
