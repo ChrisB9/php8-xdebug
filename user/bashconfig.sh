@@ -1,21 +1,29 @@
-alias ll='ls -alh'
-export PATH=$PATH:~/.composer/vendor/bin:./bin:./vendor/bin:./node_modules/.bin
+alias ls='exa'
+alias ll='exa -alh --git'
+export PATH=$PATH:~/.composer/vendor/bin:./bin:./vendor/bin:./node_modules/.bin:/usr/local/cargo/bin
 source ~/.git-completion.bash
 source ~/.git-prompt.sh
+source ~/.completions.bash
+
+is_root() {
+  return $(id -u)
+}
+
+has_sudo() {
+  local prompt
+
+  prompt=$(sudo -nv 2>&1)
+  if [ $? -eq 0 ] || is_root; then
+    return 1
+  fi
+  return 0
+}
 
 # for more information on this: https://github.com/pluswerk/php-dev/blob/master/.additional_bashrc.sh
 CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
 export HOST_DISPLAY_NAME=$HOSTNAME
 
-SUDO=''
-if (( $EUID != 0 )); then
-   SUDO='sudo'
-fi
-
-if [ -e /var/run/docker.sock ]; then
-   $SUDO apk add docker
-fi
-if sudo docker ps -q &>/dev/null; then
+if has_sudo -eq 1 && [ sudo docker ps -q ] &>/dev/null; then
   DOCKER_COMPOSE_PROJECT=$(sudo docker inspect ${CONTAINER_ID} | grep '"com.docker.compose.project":' | awk '{print $2}' | tr -d '"' | tr -d ',')
   export NODE_CONTAINER=$(sudo docker ps -f "name=${DOCKER_COMPOSE_PROJECT}_node_1" --format {{.Names}})
   export HOST_DISPLAY_NAME=$(sudo docker inspect ${CONTAINER_ID} --format='{{.Name}}')
@@ -28,29 +36,48 @@ if sudo docker ps -q &>/dev/null; then
   alias npm='node_exec npm'
   alias npx='node_exec npx'
   alias yarn='node_exec yarn'
-fi;
+fi
 export HOST_DISPLAY_NAME=$HOSTNAME
 
-if [[ $CONTAINER_ID != ${HOSTNAME}* ]] ; then
+if [[ $CONTAINER_ID != ${HOSTNAME}* ]]; then
   export HOST_DISPLAY_NAME=$HOSTNAME
 fi
 
-PS1='\033]2;'$(pwd)'\007\[\e[0;36m\][\[\e[1;31m\]\u\[\e[0;36m\]@\[\e[1;34m\]$HOST_DISPLAY_NAME\[\e[0;36m\]: \[\e[0m\]\w\[\e[0;36m\]]\[\e[0m\]\$\[\e[1;32m\]\s\[\e[0;33m\]$(__git_ps1)\[\e[0;36m\]> \[\e[0m\]\n$ ';
+PS1='\033]2;'$(pwd)'\007\[\e[0;36m\][\[\e[1;31m\]\u\[\e[0;36m\]@\[\e[1;34m\]$HOST_DISPLAY_NAME\[\e[0;36m\]: \[\e[0m\]\w\[\e[0;36m\]]\[\e[0m\]\$\[\e[1;32m\]\s\[\e[0;33m\]$(__git_ps1)\[\e[0;36m\]> \[\e[0m\]\n$ '
 
-if [ -z "$SSH_AUTH_SOCK" ] ; then
+eval `ssh-agent -s`
+if [ -z "$SSH_AUTH_SOCK" ]; then
   ssh-add -t 604800 ~/.ssh/id_rsa
+else
+  ssh-add
 fi
 
-function listEnvs() {
-  env | grep "^${1}" | cut -d= -f1
-}
+# setting some defaults:
+export GREP_OPTIONS=' — color=auto'
+export EDITOR=vim
 
-function getEnvVar() {
-  awk "BEGIN {print ENVIRON[\"$1\"]}"
-}
+# adding some useful functions
 
-function restartPhp() {
-  $SUDO supervisorctl -c /opt/docker/supervisord.conf restart php-fpm:php-fpm
+## this extracts pretty much any archive
+function extract() {
+  if [ -f $1 ]; then
+    case $1 in
+    *.tar.bz2) tar xvjf $1 ;;
+    *.tar.gz) tar xvzf $1 ;;
+    *.bz2) bunzip2 $1 ;;
+    *.rar) unrar x $1 ;;
+    *.gz) gunzip $1 ;;
+    *.tar) tar xvf $1 ;;
+    *.tbz2) tar xvjf $1 ;;
+    *.tgz) tar xvzf $1 ;;
+    *.zip) unzip $1 ;;
+    *.Z) uncompress $1 ;;
+    *.7z) 7z x $1 ;;
+    *) echo "'$1' cannot be extracted via >extract<" ;;
+    esac
+  else
+    echo "'$1' is not a valid file!"
+  fi
 }
 
 function xdebug-enable() {
@@ -64,26 +91,3 @@ function xdebug-debug() {
 function xdebug-disable() {
   xdebug-mode "off"
 }
-
-function xdebug-mode() {
-  cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|$(cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | grep 'xdebug.mode')|xdebug\.mode\=${1}|g" >> /tmp/xdebug.ini
-  $SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-  restartPhp
-}
-
-iniChanged=false;
-for ENV_VAR in $(listEnvs "php\."); do
-  env_key=${ENV_VAR#php.}
-  env_val=$(getEnvVar "$ENV_VAR")
-  iniChanged=true
-
-  echo "$env_key = ${env_val}" >> /usr/local/etc/php/conf.d/x.override.php.ini
-done
-
-if [[ -n "${XDEBUG_HOST}" ]]; then
-  cat /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini | sed "s|\#\ xdebug\.client\_host\ \=|xdebug\.client\_host=${XDEBUG_HOST}|g" >> /tmp/xdebug.ini
-  iniChanged=true
-  $SUDO mv /tmp/xdebug.ini /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-fi
-
-[ $iniChanged = true ] && restartPhp

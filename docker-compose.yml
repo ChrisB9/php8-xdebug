@@ -9,6 +9,7 @@ services:
       - ./app:/app
     environment:
       - VIRTUAL_HOST=php8.local.cben.dev
+      - php.memory_limit=-1
 
   lint:
     image: hadolint/hadolint
