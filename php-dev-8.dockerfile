@@ -13,6 +13,7 @@ ENV NGINX_VERSION 1.19.1
 ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
 ENV XDEBUG_VERSION="3.0.0"
 ENV IS_CLI=false
+ENV IS_ALPINE=true
 
 COPY conf/ /opt/docker/
 # install dependencies
@@ -23,12 +24,12 @@ RUN apk add --no-cache \
     		gd-dev \
     		geoip-dev \
     		git \
-    		git \
     		gnupg1 \
     		imagemagick \
     		jpegoptim \
     		less \
     		libffi-dev \
+    		libgit2 \
     		libwebp-tools \
     		libxslt-dev \
     		make \
@@ -48,6 +49,7 @@ RUN apk add --no-cache \
     	&& apk add --no-cache --virtual .build-deps \
     	    autoconf \
     	    automake \
+    	    cargo \
     	    cmake \
     	    g++ \
     	    gcc \
@@ -56,7 +58,9 @@ RUN apk add --no-cache \
     		libc-dev \
     		libtool \
     		linux-headers \
-    		perl-dev
+    		musl-dev \
+    		perl-dev \
+    		rust
 
 
 # Add groups and users
@@ -64,8 +68,9 @@ RUN apk add --no-cache \
 RUN addgroup -S nginx \
     && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 RUN addgroup -g $APPLICATION_GID $APPLICATION_GROUP \
-    && echo '%application ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/application \
-    && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER
+    && echo "%$APPLICATION_GROUP ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$APPLICATION_USER \
+    && adduser -D -u $APPLICATION_UID -s /bin/bash -G $APPLICATION_GROUP $APPLICATION_USER \
+    && addgroup $APPLICATION_USER nginx
 
 RUN mkdir -p /usr/src \
     && cd /usr/src \
@@ -171,17 +176,17 @@ STOPSIGNAL SIGQUIT
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
 
-# hadolint ignore=SC2046
-RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-completion.bash > /root/.git-completion.bash \
-    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-prompt.sh > /root/.git-prompt.sh
+RUN curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash > /root/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh > /root/.git-prompt.sh \
+    && curl https://raw.githubusercontent.com/ogham/exa/master/completions/completions.bash > /root/.completions.bash
 
 USER application
 
-# hadolint ignore=SC2046
-RUN curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-completion.bash > /home/application/.git-completion.bash \
-    && curl https://raw.githubusercontent.com/git/git/v$(git --version | awk 'NF>1{print "$NF"}')/contrib/completion/git-prompt.sh > /home/application/.git-prompt.sh
+RUN curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash > /home/$APPLICATION_USER/.git-completion.bash \
+    && curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh > /home/$APPLICATION_USER/.git-prompt.sh \
+    && curl https://raw.githubusercontent.com/ogham/exa/master/completions/completions.bash > /home/$APPLICATION_USER/.completions.bash
 RUN composer global require perftools/php-profiler && composer clear
-COPY user/* /home/application/
+COPY user/* /home/$APPLICATION_USER/
 RUN echo "source ~/bashconfig.sh" >> ~/.bashrc
 
 USER root
@@ -208,11 +213,37 @@ RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
     && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
     && docker-php-ext-install xdebug
 
+ENV \
+    COMPOSER_HOME=/home/$APPLICATION_USER/.composer \
+    POSTFIX_RELAYHOST="[global-mail]:1025" \
+    PHP_DISPLAY_ERRORS="1" \
+    PHP_MEMORY_LIMIT="-1" \
+    TZ=Europe/Berlin
+
+WORKDIR /tmp
+
+ENV PATH=/usr/local/cargo/bin:$PATH
+
+RUN git clone https://github.com/ogham/exa \
+    && cd exa \
+        && cargo build --release \
+    && mv target/release/exa /usr/local/bin/exa \
+    && curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin/ \
+    && rm -rf /tmp/exa
+
+COPY entrypoint/entrypoint.sh /entrypoint
+COPY entrypoint/scripts /entrypoint.d/
+COPY bins/ /usr-bins/
+RUN chmod +x /entrypoint.d/*.sh /entrypoint /usr-bins/* \
+    && mv /usr-bins/* /usr/local/bin/ \
+    && mkdir -p /var/log/supervisord
+
 
 RUN apk del .build-deps .nginx-rundeps
 
-RUN mkdir -p /var/log/supervisord
+
+
+ENTRYPOINT ["/entrypoint"]
 EXPOSE 80 443 9003
-CMD ["/usr/bin/supervisord", "-nc", "/opt/docker/supervisord.conf"]
 
 WORKDIR /app
