@@ -24,15 +24,12 @@ RUN apk del .build-deps .nginx-rundeps
 {{ else }}
 RUN rm -rf /var/lib/apt/lists/* \
     && apt-get remove -y \
-        autoconf \
         automake \
         cmake \
         g++ \
-        gcc \
         gettext \
         golang-go\
         libtool \
-        make \
     && /root/.cargo/bin/rustup self uninstall -y
 {{ endif }}
 
