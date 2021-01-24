@@ -247,3 +247,4 @@ ENTRYPOINT ["/entrypoint"]
 EXPOSE 80 443 9003
 
 WORKDIR /app
+
