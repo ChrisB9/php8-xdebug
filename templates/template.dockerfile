@@ -82,7 +82,9 @@ RUN install-php-extensions \ {{- if is_dev }}
     pcov \ {{- endif }}
     mongodb \
     gd \
-    pcntl
+    pcntl \
+    && docker-php-ext-install ffi \
+    && docker-php-ext-enable ffi
 
 {{- if is_dev }}
 RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
