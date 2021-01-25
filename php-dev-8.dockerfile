@@ -201,7 +201,9 @@ RUN install-php-extensions \
     pcov \
     mongodb \
     gd \
-    pcntl
+    pcntl \
+    && docker-php-ext-install ffi \
+    && docker-php-ext-enable ffi
 RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
     && mkdir /tmp/debug \
     && chmod -R 777 /tmp/debug \
