@@ -75,10 +75,9 @@ COPY user/* /root/
 RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files/
 
-# activate opcache and jit
-RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
-
-RUN install-php-extensions \ {{- if is_dev }}
+RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini" \
+    install-php-extensions \ {{- if is_dev }}
+    xdebug-^3 \
     pcov \ {{- endif }}
     mongodb \
     gd \
@@ -92,10 +91,6 @@ RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
     && chmod -R 777 /tmp/debug \
     # && mkdir -p /opt/docker/profiler \
     # && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini" \
-    && git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
-    && docker-php-ext-configure xdebug --enable-xdebug-dev \
-    && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
-    && docker-php-ext-install xdebug \
     && echo "ffi.enable=preload" >> "$PHP_INI_DIR/conf.d/docker-php-ffi.ini"
 {{- endif }}
 

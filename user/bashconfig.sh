@@ -1,5 +1,5 @@
 alias ls='exa'
-alias ll='exa -alh --git'
+alias ll='exa -alh --git --header'
 export PATH=$PATH:~/.composer/vendor/bin:./bin:./vendor/bin:./node_modules/.bin:/usr/local/cargo/bin
 source ~/.git-completion.bash
 source ~/.git-prompt.sh
@@ -52,11 +52,7 @@ else
   ssh-add
 fi
 
-# setting some defaults:
-export GREP_OPTIONS=' — color=auto'
 export EDITOR=vim
-
-# adding some useful functions
 
 ## this extracts pretty much any archive
 function extract() {
