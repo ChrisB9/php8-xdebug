@@ -76,7 +76,7 @@ RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files/
 
 RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini" \
-    install-php-extensions \ {{- if is_dev }}
+    && install-php-extensions \ {{- if is_dev }}
     xdebug-^3 \
     pcov \ {{- endif }}
     mongodb \
