@@ -208,6 +208,8 @@ RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcac
     xdebug-^3 \
     pcov \
     mongodb \
+    zip \
+    soap \
     gd \
     pcntl \
     && docker-php-ext-install ffi \
