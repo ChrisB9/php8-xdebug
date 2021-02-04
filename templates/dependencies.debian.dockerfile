@@ -38,7 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     		sudo \
     		supervisor \
     		tree \
+    		unzip \
     		vim \
     		wget \
+    		zip \
     	&& rm -rf /var/lib/apt/lists/* \
     	&& curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y

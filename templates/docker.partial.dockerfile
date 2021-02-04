@@ -12,6 +12,11 @@ RUN git clone https://github.com/ogham/exa \
     && curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin/ \
     && rm -rf /tmp/exa
 
+RUN wget https://github.com/dalance/amber/releases/download/v0.5.8/amber-v0.5.8-x86_64-lnx.zip \
+    && unzip amber-v0.5.8-x86_64-lnx.zip \
+    && rm amber-v0.5.8-x86_64-lnx.zip \
+    && mv amb* /usr/local/bin/
+
 COPY entrypoint/entrypoint.sh /entrypoint
 COPY entrypoint/scripts /entrypoint.d/
 COPY bins/ /usr-bins/

@@ -9,6 +9,13 @@ ENV APPLICATION_USER=application \
     APPLICATION_PATH=/app \
     APPLICATION_UID=1000 \
     APPLICATION_GID=1000 {{- if base.is_web }}
+ENV WEB_DOCUMENT_ROOT=/app \
+    WEB_DOCUMENT_INDEX=index.php \
+    WEB_ALIAS_DOMAIN=*.vm \
+    WEB_PHP_TIMEOUT=600 \
+    WEB_PHP_SOCKET=localhost:9000 \
+    NGINX_CLIENT_MAX_BODY=50m \
+    WEB_NO_CACHE_PATTERN="\.(css|js|gif|png|jpg|svg|json|xml)$"
 ENV NGINX_VERSION 1.19.1
 ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3{{- endif }}
 {{ if is_dev }}ENV XDEBUG_VERSION="{base.envs.XDEBUG_VERSION}"{{ endif }}

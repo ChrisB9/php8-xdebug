@@ -25,8 +25,10 @@ RUN apk add --no-cache \
     		sudo \
     		supervisor \
     		tree \
+    		unzip \
     		vim \
     		wget \
+    		zip \
     		zlib-dev \
     	&& apk add --no-cache --virtual .build-deps \
     	    autoconf \

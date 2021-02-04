@@ -1,5 +1,7 @@
+export LS_COLORS="${LS_COLORS}di=1;34:"
+export EXA_COLORS="da=1;34:gm=1;34"
 alias ls='exa'
-alias ll='exa -alh --git --header'
+alias ll='ls -alh --git --header --group'
 export PATH=$PATH:~/.composer/vendor/bin:./bin:./vendor/bin:./node_modules/.bin:/usr/local/cargo/bin
 source ~/.git-completion.bash
 source ~/.git-prompt.sh
