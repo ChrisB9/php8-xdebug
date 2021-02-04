@@ -9,6 +9,13 @@ ENV APPLICATION_USER=application \
     APPLICATION_PATH=/app \
     APPLICATION_UID=1000 \
     APPLICATION_GID=1000
+ENV WEB_DOCUMENT_ROOT=/app \
+    WEB_DOCUMENT_INDEX=index.php \
+    WEB_ALIAS_DOMAIN=*.vm \
+    WEB_PHP_TIMEOUT=600 \
+    WEB_PHP_SOCKET=localhost:9000 \
+    NGINX_CLIENT_MAX_BODY=50m \
+    WEB_NO_CACHE_PATTERN="\.(css|js|gif|png|jpg|svg|json|xml)$"
 ENV NGINX_VERSION 1.19.1
 ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
 ENV XDEBUG_VERSION="3.0.0"
@@ -43,8 +50,10 @@ RUN apk add --no-cache \
     		sudo \
     		supervisor \
     		tree \
+    		unzip \
     		vim \
     		wget \
+    		zip \
     		zlib-dev \
     	&& apk add --no-cache --virtual .build-deps \
     	    autoconf \
@@ -194,10 +203,9 @@ COPY user/* /root/
 RUN mkdir -p /opt/php-libs
 COPY php/* /opt/php-libs/files/
 
-# activate opcache and jit
-RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini"
-
-RUN install-php-extensions \
+RUN mv /opt/php-libs/files/opcache-jit.ini "$PHP_INI_DIR/conf.d/docker-php-opcache-jit.ini" \
+    && install-php-extensions \
+    xdebug-^3 \
     pcov \
     mongodb \
     gd \
@@ -209,10 +217,6 @@ RUN mv /opt/php-libs/files/pcov.ini "$PHP_INI_DIR/conf.d/docker-php-pcov.ini" \
     && chmod -R 777 /tmp/debug \
     # && mkdir -p /opt/docker/profiler \
     # && mv /opt/php-libs/files/xhprof.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xhprof.ini" \
-    && git clone -b $XDEBUG_VERSION --depth 1 https://github.com/xdebug/xdebug.git /usr/src/php/ext/xdebug \
-    && docker-php-ext-configure xdebug --enable-xdebug-dev \
-    && mv /opt/php-libs/files/xdebug.ini "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini" \
-    && docker-php-ext-install xdebug \
     && echo "ffi.enable=preload" >> "$PHP_INI_DIR/conf.d/docker-php-ffi.ini"
 
 ENV \
@@ -232,6 +236,12 @@ RUN git clone https://github.com/ogham/exa \
     && mv target/release/exa /usr/local/bin/exa \
     && curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin/ \
     && rm -rf /tmp/exa
+
+# hadolint ignore=DL4001
+RUN wget https://github.com/dalance/amber/releases/download/v0.5.8/amber-v0.5.8-x86_64-lnx.zip \
+    && unzip amber-v0.5.8-x86_64-lnx.zip \
+    && rm amber-v0.5.8-x86_64-lnx.zip \
+    && mv amb* /usr/local/bin/
 
 COPY entrypoint/entrypoint.sh /entrypoint
 COPY entrypoint/scripts /entrypoint.d/
